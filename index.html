@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>قارئ القرآن</title>
+  <style>
+    body, html {
+      margin: 0;
+      padding: 0;
+      background-color: #000;
+      overflow: hidden;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: none;
+    }
+    #quranImage {
+      max-width: 100%;
+      max-height: 100%;
+      transition: transform 0.3s ease;
+    }
+    #controls {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      z-index: 100;
+    }
+    #controls button {
+      font-size: 18px;
+      padding: 10px;
+      margin: 5px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div id="controls">
+    <!-- زر تغيير السورة/الانتقال للصفحة المطلوبة -->
+    <button id="btnSura">بي</button>
+  </div>
+  <img id="quranImage" src="" alt="صفحة من القرآن">
+
+  <script>
+    // المتغيرات الأساسية
+    let currentPage = 1;
+    const totalPages = 604;
+    let scale = 1;
+    let startX = 0;
+    let startY = 0;
+    let initialDistance = 0;
+    let initialScale = 1;
+    const image = document.getElementById('quranImage');
+
+    // استرجاع رقم الصفحة المحفوظ من قبل (إن وجد)
+    if(localStorage.getItem('currentPage')) {
+      currentPage = parseInt(localStorage.getItem('currentPage'));
+    }
+
+    // دالة لتحديث رابط الصورة حسب رقم الصفحة
+    function updateImage() {
+      let baseUrl = "";
+      // يتم حساب رقم الصورة بإضافة 3 إلى رقم الصفحة (حتى تتوافق مع الأرقام المذكورة)
+      let imageNumber = currentPage + 3;
+      // تنسيق الرقم إلى 4 خانات (مثلاً 4 -> 0004)
+      let formattedNumber = ("000" + imageNumber).slice(-4);
+      // استخدام نطاق النطاق المناسب حسب رقم الصفحة
+      if(currentPage <= 196) {
+        baseUrl = "https://www.nourelquran.net/quranforall/fahd/source/pg_";
+      } else {
+        baseUrl = "https://www.nourelquran.com/quranforall/fahd/source/pg_";
+      }
+      image.src = baseUrl + formattedNumber + ".webp";
+      localStorage.setItem('currentPage', currentPage);
+      // إعادة تعيين التكبير عند تغيير الصفحة
+      scale = 1;
+      image.style.transform = "scale(" + scale + ")";
+    }
+
+    updateImage();
+
+    // التعامل مع اللمسات: التقليب (swipe) والتكبير/تصغير (pinch)
+    let touchMode = null;
+
+    image.addEventListener('touchstart', function(e) {
+      if(e.touches.length === 1) {
+        touchMode = 'swipe';
+        startX = e.touches[0].clientX;
+        startY = e.touches[0].clientY;
+      } else if(e.touches.length === 2) {
+        touchMode = 'pinch';
+        initialDistance = Math.hypot(
+          e.touches[0].clientX - e.touches[1].clientX,
+          e.touches[0].clientY - e.touches[1].clientY
+        );
+        initialScale = scale;
+      }
+    });
+
+    image.addEventListener('touchmove', function(e) {
+      if(touchMode === 'pinch' && e.touches.length === 2) {
+        let currentDistance = Math.hypot(
+          e.touches[0].clientX - e.touches[1].clientX,
+          e.touches[0].clientY - e.touches[1].clientY
+        );
+        scale = initialScale * (currentDistance / initialDistance);
+        image.style.transform = "scale(" + scale + ")";
+        e.preventDefault();
+      }
+    });
+
+    image.addEventListener('touchend', function(e) {
+      if(touchMode === 'swipe') {
+        let endX = e.changedTouches[0].clientX;
+        let diffX = endX - startX;
+        // عتبة السحب 50 بكسل لتأكيد الحركة
+        if(Math.abs(diffX) > 50) {
+          if(diffX < 0 && currentPage < totalPages) {
+            currentPage++;
+          } else if(diffX > 0 && currentPage > 1) {
+            currentPage--;
+          }
+          updateImage();
+        }
+      }
+      touchMode = null;
+    });
+
+    // زر "بي" لتغيير الصفحة (يمكن استخدامه لتغيير السورة حسب رغبتك)
+    document.getElementById('btnSura').addEventListener('click', function() {
+      let page = prompt("أدخل رقم الصفحة المراد الانتقال إليها (1 - 604):", currentPage);
+      page = parseInt(page);
+      if(page >= 1 && page <= totalPages) {
+        currentPage = page;
+        updateImage();
+      } else {
+        alert("رقم الصفحة غير صحيح!");
+      }
+    });
+
+    // دعم استخدام مفاتيح السهم لسطح المكتب
+    document.addEventListener('keydown', function(e) {
+      if(e.key === "ArrowLeft" && currentPage > 1) {
+        currentPage--;
+        updateImage();
+      } else if(e.key === "ArrowRight" && currentPage < totalPages) {
+        currentPage++;
+        updateImage();
+      }
+    });
+  </script>
+</body>
+</html>
