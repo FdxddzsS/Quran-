@@ -39,13 +39,11 @@
 </head>
 <body>
   <div id="controls">
-    <!-- زر تغيير السورة/الانتقال للصفحة المطلوبة -->
     <button id="btnSura">بي</button>
   </div>
   <img id="quranImage" src="" alt="صفحة من القرآن">
 
   <script>
-    // المتغيرات الأساسية
     let currentPage = 1;
     const totalPages = 604;
     let scale = 1;
@@ -55,34 +53,35 @@
     let initialScale = 1;
     const image = document.getElementById('quranImage');
 
-    // استرجاع رقم الصفحة المحفوظ من قبل (إن وجد)
     if(localStorage.getItem('currentPage')) {
       currentPage = parseInt(localStorage.getItem('currentPage'));
     }
 
-    // دالة لتحديث رابط الصورة حسب رقم الصفحة
     function updateImage() {
       let baseUrl = "";
-      // يتم حساب رقم الصورة بإضافة 3 إلى رقم الصفحة (حتى تتوافق مع الأرقام المذكورة)
       let imageNumber = currentPage + 3;
-      // تنسيق الرقم إلى 4 خانات (مثلاً 4 -> 0004)
       let formattedNumber = ("000" + imageNumber).slice(-4);
-      // استخدام نطاق النطاق المناسب حسب رقم الصفحة
-      if(currentPage <= 196) {
+      
+      if (currentPage <= 196) {
         baseUrl = "https://www.nourelquran.net/quranforall/fahd/source/pg_";
       } else {
         baseUrl = "https://www.nourelquran.com/quranforall/fahd/source/pg_";
       }
-      image.src = baseUrl + formattedNumber + ".webp";
+
+      let newImage = new Image();
+      newImage.src = baseUrl + formattedNumber + ".webp";
+
+      newImage.onload = function() {
+        image.src = this.src;
+      };
+
       localStorage.setItem('currentPage', currentPage);
-      // إعادة تعيين التكبير عند تغيير الصفحة
       scale = 1;
       image.style.transform = "scale(" + scale + ")";
     }
 
     updateImage();
 
-    // التعامل مع اللمسات: التقليب (swipe) والتكبير/تصغير (pinch)
     let touchMode = null;
 
     image.addEventListener('touchstart', function(e) {
@@ -116,7 +115,7 @@
       if(touchMode === 'swipe') {
         let endX = e.changedTouches[0].clientX;
         let diffX = endX - startX;
-        // عتبة السحب 50 بكسل لتأكيد الحركة
+        
         if(Math.abs(diffX) > 50) {
           if(diffX < 0 && currentPage < totalPages) {
             currentPage++;
@@ -129,7 +128,6 @@
       touchMode = null;
     });
 
-    // زر "بي" لتغيير الصفحة (يمكن استخدامه لتغيير السورة حسب رغبتك)
     document.getElementById('btnSura').addEventListener('click', function() {
       let page = prompt("أدخل رقم الصفحة المراد الانتقال إليها (1 - 604):", currentPage);
       page = parseInt(page);
@@ -141,7 +139,6 @@
       }
     });
 
-    // دعم استخدام مفاتيح السهم لسطح المكتب
     document.addEventListener('keydown', function(e) {
       if(e.key === "ArrowLeft" && currentPage > 1) {
         currentPage--;
@@ -150,6 +147,16 @@
         currentPage++;
         updateImage();
       }
+    });
+
+    // منع فتح رابط الصورة عند الضغط المطول
+    image.addEventListener('contextmenu', function(e) {
+      e.preventDefault();
+    });
+
+    // منع سحب الصورة لتجنب ظهور الرابط
+    image.addEventListener('dragstart', function(e) {
+      e.preventDefault();
     });
   </script>
 </body>
